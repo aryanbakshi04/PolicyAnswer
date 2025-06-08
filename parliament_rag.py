@@ -121,12 +121,5 @@ if st.button("Generate Answer"):
             answer = response.content if hasattr(response, 'content') else str(response)
             source_urls = list({doc.metadata.get('source_url') for doc in docs if 'source_url' in doc.metadata})
 
-            st.subheader("📝 Answer")
+            st.subheader("Response")
             st.write(answer)
-
-            if source_urls:
-                st.subheader("📄 Source PDF(s)")
-                for link in source_urls:
-                    st.markdown(f"- [View PDF]({link})")
-            else:
-                st.info("No source PDFs found.")
