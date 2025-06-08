@@ -33,7 +33,6 @@ def fetch_pdf_links(max_pages=5):
         resp = requests.get(url)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, 'html.parser')
-        # Find all links with .pdf href
         for a in soup.find_all('a', href=True):
             href = a['href']
             if href.lower().endswith('.pdf'):
@@ -60,7 +59,10 @@ def build_vectorstore(pdf_urls):
     for url in pdf_urls:
         path = download_pdf(url)
         loader = PyPDFLoader(path)
-        docs.extend(loader.load())
+        docs_loaded = loader.load()
+        for doc in docs_loaded:
+            doc.metadata['source_url'] = url
+        docs.extend(docs_loaded)
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
     chunks = splitter.split_documents(docs)
     if not chunks:
@@ -114,5 +116,17 @@ if st.button("Generate Answer"):
             )
             with st.spinner("Generating response..."):
                 response = st.session_state.agent.run(prompt)
-            st.subheader("Generated Answer")
-            st.write(response)
+
+            # Extract clean content and PDF citations
+            answer = response.content if hasattr(response, 'content') else str(response)
+            source_urls = list({doc.metadata.get('source_url') for doc in docs if 'source_url' in doc.metadata})
+
+            st.subheader("📝 Answer")
+            st.write(answer)
+
+            if source_urls:
+                st.subheader("📄 Source PDF(s)")
+                for link in source_urls:
+                    st.markdown(f"- [View PDF]({link})")
+            else:
+                st.info("No source PDFs found.")
