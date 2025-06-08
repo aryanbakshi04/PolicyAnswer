@@ -9,7 +9,7 @@ import streamlit as st
 import requests
 from bs4 import BeautifulSoup
 
-from langchain_community.document_loaders import UnstructuredPDFLoader
+from langchain_community.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import SentenceTransformerEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -59,7 +59,7 @@ def build_vectorstore(pdf_urls):
     docs = []
     for url in pdf_urls:
         path = download_pdf(url)
-        loader = UnstructuredPDFLoader(path)
+        loader = PyPDFLoader(path)
         docs.extend(loader.load())
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
     chunks = splitter.split_documents(docs)
