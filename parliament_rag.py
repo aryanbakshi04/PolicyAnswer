@@ -10,7 +10,7 @@ import requests
 from bs4 import BeautifulSoup
 from io import BytesIO
 
-from langchain.document_loaders.unstructured import UnstructuredPDFLoader
+from langchain_community.document_loaders import UnstructuredPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain.embeddings import SentenceTransformerEmbeddings
 from langchain.vectorstores import FAISS
