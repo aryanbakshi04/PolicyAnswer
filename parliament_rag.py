@@ -26,23 +26,20 @@ os.makedirs(PDF_CACHE_DIR, exist_ok=True)
 
 @st.cache_data
 def fetch_pdf_links(max_pages=5):
-    pdf_links = []
+    pdf_links = set()
+    import urllib.parse
     for page in range(max_pages):
-        params = {
-            'field_house_tid': 'All',
-            'field_question_type_tid': 'All',
-            'field_question_no_value': '',
-            'title': '',
-            'page': page
-        }
-        resp = requests.get(BASE_URL, params=params)
+        url = f"{BASE_URL}?field_house_tid=All&field_question_type_tid=All&field_question_no_value=&title=&page={page}"
+        resp = requests.get(url)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.text, 'html.parser')
-        for a in soup.select('a.download-pdf'):
-            href = a.get('href')
-            if href and href.lower().endswith('.pdf'):
-                pdf_links.append(href)
-    return list(set(pdf_links))
+        # Find all links with .pdf href
+        for a in soup.find_all('a', href=True):
+            href = a['href']
+            if href.lower().endswith('.pdf'):
+                full_url = urllib.parse.urljoin(BASE_URL, href)
+                pdf_links.add(full_url)
+    return list(pdf_links)
 
 @st.cache_data
 def download_pdf(url):
