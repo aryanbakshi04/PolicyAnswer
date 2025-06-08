@@ -9,12 +9,18 @@ from langchain.embeddings import SentenceTransformerEmbeddings
 from langchain.vectorstores import FAISS
 from langchain.chains import RetrievalQA
 from langchain.llms import VertexAI
+from agno.agent import Agent
+from agno.models.google import Gemini
 
 # Constants
 BASE_URL = "https://legalaffairs.gov.in/parliament-qa"
 PDF_CACHE_DIR = "pdf_cache"
 EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-GEMINI_MODEL_NAME = "gemini-1.0"  # adjust as per available model
+GEMINI_MODEL_NAME = "gemini-2.0-flash-exp"  # adjust as per available model
+
+api_key = os.getenv("GOOGLE_API_KEY")
+
+os.environ["GOOGLE_API_KEY"] = api_key
 
 # Ensure cache directory exists
 os.makedirs(PDF_CACHE_DIR, exist_ok=True)
