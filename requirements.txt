@@ -2,6 +2,11 @@ streamlit
 requests
 beautifulsoup4
 langchain
+langchain-community
+unstructured
 faiss-cpu
 sentence-transformers
-google-genai
+agno
+google-auth           
+google-auth-oauthlib   
+python-dotenv         
