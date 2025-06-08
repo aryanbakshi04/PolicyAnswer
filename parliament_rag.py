@@ -8,12 +8,11 @@ import os
 import streamlit as st
 import requests
 from bs4 import BeautifulSoup
-from io import BytesIO
 
 from langchain_community.document_loaders import UnstructuredPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.embeddings import SentenceTransformerEmbeddings
-from langchain.vectorstores import FAISS
+from langchain_community.embeddings import SentenceTransformerEmbeddings
+from langchain_community.vectorstores import FAISS
 
 from agno.agent import Agent
 from agno.models.google import Gemini
@@ -57,6 +56,9 @@ def download_pdf(url):
 
 @st.cache_resource
 def build_vectorstore(pdf_urls):
+    if not pdf_urls:
+        st.error("No PDF links found. Please check the source URL or page settings.")
+        return None
     docs = []
     for url in pdf_urls:
         path = download_pdf(url)
@@ -64,6 +66,9 @@ def build_vectorstore(pdf_urls):
         docs.extend(loader.load())
     splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
     chunks = splitter.split_documents(docs)
+    if not chunks:
+        st.error("No text extracted from PDFs. Cannot build index.")
+        return None
     embeddings = SentenceTransformerEmbeddings(model_name=EMBEDDING_MODEL)
     vectordb = FAISS.from_documents(chunks, embeddings)
     return vectordb
@@ -83,18 +88,15 @@ def init_agent():
 
 st.title("Parliamentary QA Assistant (Gemini RAG)")
 st.sidebar.header("Settings")
-max_pages = st.sidebar.number_input(
-    "Number of pages to crawl for PDFs", min_value=1, max_value=20, value=5
-)
-
-st.write(
-    "Enter a parliamentary question and minister’s name, and get a formally phrased answer based on past answers."
-)
+max_pages = st.sidebar.number_input("Number of pages to crawl for PDFs", 1, 20, 5)
 
 if 'vectordb' not in st.session_state:
     with st.spinner("Indexing past minister PDFs..."):
         pdf_links = fetch_pdf_links(max_pages)
-        st.session_state.vectordb = build_vectorstore(pdf_links)
+        vectordb = build_vectorstore(pdf_links)
+        if vectordb is None:
+            st.stop()
+        st.session_state.vectordb = vectordb
         st.session_state.agent = init_agent()
 
 question = st.text_area("Parliamentary Question:")
@@ -105,13 +107,15 @@ if st.button("Generate Answer"):
         st.error("Both a question and minister name are required.")
     else:
         docs = st.session_state.vectordb.similarity_search(question, k=4)
-        context = "\n\n".join([doc.page_content for doc in docs])
-        prompt = (
-            f"Context:\n{context}\n\n"
-            f"Answer as {minister}: Provide a formal, solution-oriented response focused on public interest. "
-            f"Question: {question}"
-        )
-        with st.spinner("Generating response..."):
-            response = st.session_state.agent.run(prompt)
-        st.subheader("Generated Answer")
-        st.write(response)
+        if not docs:
+            st.error("No relevant context found for the question.")
+        else:
+            context = "\n\n".join([doc.page_content for doc in docs])
+            prompt = (
+                f"Context:\n{context}\n\n"
+                f"Answer as {minister}: Provide a formal, solution-oriented response focused on public interest. Question: {question}"
+            )
+            with st.spinner("Generating response..."):
+                response = st.session_state.agent.run(prompt)
+            st.subheader("Generated Answer")
+            st.write(response)
