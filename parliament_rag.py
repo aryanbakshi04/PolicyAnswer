@@ -87,10 +87,9 @@ def init_agent():
 
 st.title("Parliamentary QA Assistant")
 
-
 if 'vectordb' not in st.session_state:
     with st.spinner("Indexing past minister PDFs..."):
-        pdf_links = fetch_pdf_links(max_pages)
+        pdf_links = fetch_pdf_links(5)
         vectordb = build_vectorstore(pdf_links)
         if vectordb is None:
             st.stop()
@@ -116,9 +115,13 @@ if st.button("Generate Answer"):
             with st.spinner("Generating response..."):
                 response = st.session_state.agent.run(prompt)
 
-            # Extract clean content and PDF citations
             answer = response.content if hasattr(response, 'content') else str(response)
             source_urls = list({doc.metadata.get('source_url') for doc in docs if 'source_url' in doc.metadata})
 
             st.subheader("Response")
             st.write(answer)
+
+            if source_urls:
+                st.subheader("Source PDF Links")
+                for url in source_urls:
+                    st.markdown(f"- [Download PDF]({url})")
