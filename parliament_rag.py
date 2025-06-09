@@ -85,7 +85,7 @@ def init_agent():
         markdown=False
     )
 
-st.title("Parliamentary QA Assistant (Gemini RAG)")
+st.title("Parliamentary QA Assistant")
 st.sidebar.header("Settings")
 max_pages = st.sidebar.number_input("Number of pages to crawl for PDFs", 1, 20, 5)
 
